@@ -215,62 +215,109 @@ export function MapMakerDashboard({ user }: MapMakerDashboardProps) {
 
       const locationType = locationTypes.find(t => t.value === location.type)
       
-      // Draw location background circle (larger)
-      ctx.beginPath()
-      ctx.arc(location.x, location.y, 16, 0, 2 * Math.PI)
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'
-      ctx.lineWidth = 1
-      ctx.stroke()
-      
-      // Draw location type circle
-      ctx.beginPath()
-      ctx.arc(location.x, location.y, 12, 0, 2 * Math.PI)
-      
-      // Convert Tailwind color to hex
-      let color = '#3b82f6'
-      if (locationType?.color === 'bg-red-500') color = '#ef4444'
-      else if (locationType?.color === 'bg-blue-500') color = '#3b82f6'
-      else if (locationType?.color === 'bg-green-500') color = '#22c55e'
-      else if (locationType?.color === 'bg-purple-500') color = '#a855f7'
-      else if (locationType?.color === 'bg-yellow-500') color = '#eab308'
-      
-      ctx.fillStyle = color
-      ctx.fill()
-      
-      // Draw selection highlight
-      if (selectedLocation?.id === location.id) {
-        ctx.beginPath()
-        ctx.arc(location.x, location.y, 20, 0, 2 * Math.PI)
-        ctx.strokeStyle = '#fbbf24'
-        ctx.lineWidth = 3
-        ctx.stroke()
-        
-        // Add pulsing effect
-        ctx.beginPath()
-        ctx.arc(location.x, location.y, 24, 0, 2 * Math.PI)
-        ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)'
-        ctx.lineWidth = 2
-        ctx.stroke()
+      // If location has a custom icon, try to draw it
+      if (location.iconUrl) {
+        // Check if we have a cached image for this icon
+        const iconImage = (location as any)._iconImage
+        if (iconImage && iconImage.complete) {
+          // Draw custom icon
+          const iconSize = 24
+          ctx.drawImage(iconImage, location.x - iconSize/2, location.y - iconSize/2, iconSize, iconSize)
+          
+          // Draw selection highlight for custom icons
+          if (selectedLocation?.id === location.id) {
+            ctx.beginPath()
+            ctx.arc(location.x, location.y, 18, 0, 2 * Math.PI)
+            ctx.strokeStyle = '#fbbf24'
+            ctx.lineWidth = 3
+            ctx.stroke()
+            
+            // Add pulsing effect
+            ctx.beginPath()
+            ctx.arc(location.x, location.y, 22, 0, 2 * Math.PI)
+            ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)'
+            ctx.lineWidth = 2
+            ctx.stroke()
+          }
+        } else if (!iconImage) {
+          // Load the icon image if not already loaded
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          img.onload = () => {
+            (location as any)._iconImage = img
+            drawMap() // Redraw when image loads
+          }
+          img.src = location.iconUrl
+          
+          // Fall back to default icon while loading
+          drawDefaultLocationIcon()
+        } else {
+          // Image is loading, show default icon
+          drawDefaultLocationIcon()
+        }
+      } else {
+        // Draw default location icon
+        drawDefaultLocationIcon()
       }
       
-      // Draw location icon (simplified)
-      ctx.fillStyle = 'white'
-      ctx.font = 'bold 10px Inter'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
+      function drawDefaultLocationIcon() {
+        // Draw location background circle (larger)
+        ctx.beginPath()
+        ctx.arc(location.x, location.y, 16, 0, 2 * Math.PI)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+        ctx.fill()
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'
+        ctx.lineWidth = 1
+        ctx.stroke()
+        
+        // Draw location type circle
+        ctx.beginPath()
+        ctx.arc(location.x, location.y, 12, 0, 2 * Math.PI)
+        
+        // Convert Tailwind color to hex
+        let color = '#3b82f6'
+        if (locationType?.color === 'bg-red-500') color = '#ef4444'
+        else if (locationType?.color === 'bg-blue-500') color = '#3b82f6'
+        else if (locationType?.color === 'bg-green-500') color = '#22c55e'
+        else if (locationType?.color === 'bg-purple-500') color = '#a855f7'
+        else if (locationType?.color === 'bg-yellow-500') color = '#eab308'
+        
+        ctx.fillStyle = color
+        ctx.fill()
+        
+        // Draw selection highlight
+        if (selectedLocation?.id === location.id) {
+          ctx.beginPath()
+          ctx.arc(location.x, location.y, 20, 0, 2 * Math.PI)
+          ctx.strokeStyle = '#fbbf24'
+          ctx.lineWidth = 3
+          ctx.stroke()
+          
+          // Add pulsing effect
+          ctx.beginPath()
+          ctx.arc(location.x, location.y, 24, 0, 2 * Math.PI)
+          ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)'
+          ctx.lineWidth = 2
+          ctx.stroke()
+        }
+        
+        // Draw location icon (simplified)
+        ctx.fillStyle = 'white'
+        ctx.font = 'bold 10px Inter'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        
+        let iconText = '?'
+        if (location.type === 'mission') iconText = '⚔'
+        else if (location.type === 'landmark') iconText = '🏛'
+        else if (location.type === 'shop') iconText = '🏪'
+        else if (location.type === 'npc') iconText = '👤'
+        else if (location.type === 'resource') iconText = '💎'
+        
+        ctx.fillText(iconText, location.x, location.y)
+      }
       
-      let iconText = '?'
-      if (location.type === 'mission') iconText = '⚔'
-      else if (location.type === 'landmark') iconText = '🏛'
-      else if (location.type === 'shop') iconText = '🏪'
-      else if (location.type === 'npc') iconText = '👤'
-      else if (location.type === 'resource') iconText = '💎'
-      
-      ctx.fillText(iconText, location.x, location.y)
-      
-      // Draw location name with background
+      // Draw location name with background (for both custom and default icons)
       ctx.font = '11px Inter'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'top'
@@ -348,7 +395,15 @@ export function MapMakerDashboard({ user }: MapMakerDashboardProps) {
       const biome = biomes.find(b => b.value === mapSettings.biome)
       const terrain = terrainTypes.find(t => t.value === mapSettings.terrainType)
       
-      const prompt = `Create a detailed top-down ${terrain?.label.toLowerCase()} ${biome?.label.toLowerCase()} terrain map for a game. Include varied terrain features like paths, clearings, water bodies, elevation changes, and natural landmarks. Style should be suitable for placing game locations like missions, shops, and landmarks. High detail, game-ready terrain texture.`
+      // Use map description to enhance terrain generation
+      const baseDescription = mapDescription.trim()
+      let prompt = `Create a detailed top-down ${terrain?.label.toLowerCase()} ${biome?.label.toLowerCase()} terrain map for a game.`
+      
+      if (baseDescription) {
+        prompt += ` The map should reflect this setting: "${baseDescription}".`
+      }
+      
+      prompt += ` Include varied terrain features like paths, clearings, water bodies, elevation changes, and natural landmarks that fit the theme. Style should be suitable for placing game locations like missions, shops, and landmarks. High detail, game-ready terrain texture with clear areas for location placement.`
       
       const { data } = await blink.ai.generateImage({
         prompt,
@@ -527,7 +582,24 @@ export function MapMakerDashboard({ user }: MapMakerDashboardProps) {
       const baseDescription = mapDescription.trim() || `A ${terrain?.label.toLowerCase()} ${biome?.label.toLowerCase()} game map`
       const distributionText = `Generate approximately ${locationTypeDistribution.mission}% missions, ${locationTypeDistribution.landmark}% landmarks, ${locationTypeDistribution.shop}% shops, ${locationTypeDistribution.npc}% NPCs, and ${locationTypeDistribution.resource}% resources`
       
-      const prompt = `Generate a list of 8-12 diverse locations for: ${baseDescription}. ${distributionText}. Each location should have a name and brief description suitable for the setting and theme. Consider the terrain type and biome when naming locations.`
+      // Enhanced prompt that considers map description more deeply
+      let prompt = `Generate a list of 8-12 diverse locations for: ${baseDescription}. ${distributionText}.`
+      
+      // Add specific guidance based on map description content
+      if (baseDescription.toLowerCase().includes('magic') || baseDescription.toLowerCase().includes('mystical')) {
+        prompt += ` Include magical elements like enchanted locations, spell shops, and mystical landmarks.`
+      }
+      if (baseDescription.toLowerCase().includes('war') || baseDescription.toLowerCase().includes('battle')) {
+        prompt += ` Include military locations like fortresses, battlefields, and weapon shops.`
+      }
+      if (baseDescription.toLowerCase().includes('ancient') || baseDescription.toLowerCase().includes('ruin')) {
+        prompt += ` Include ancient ruins, archaeological sites, and historical landmarks.`
+      }
+      if (baseDescription.toLowerCase().includes('trade') || baseDescription.toLowerCase().includes('merchant')) {
+        prompt += ` Include trading posts, merchant quarters, and commercial districts.`
+      }
+      
+      prompt += ` Each location should have a name and brief description that fits perfectly with the setting and theme. Consider the ${terrain?.label.toLowerCase()} terrain and ${biome?.label.toLowerCase()} biome when creating authentic, immersive location names and descriptions. Make locations feel interconnected and part of a cohesive world.`
       
       const { object } = await blink.ai.generateObject({
         prompt,
@@ -578,12 +650,72 @@ export function MapMakerDashboard({ user }: MapMakerDashboardProps) {
       
       const terrainText = terrainImage ? ' with intelligent terrain analysis' : ''
       toast.success(`Generated ${newLocations.length} locations${terrainText}!`)
+      
+      // Optionally generate icons for all new locations
+      if (newLocations.length > 0) {
+        toast.info('Generating custom icons for locations...')
+        // Generate icons in batches to avoid overwhelming the API
+        for (let i = 0; i < newLocations.length; i += 2) {
+          const batch = newLocations.slice(i, i + 2)
+          await Promise.all(batch.map(location => generateIconForLocation(location)))
+          // Small delay between batches
+          if (i + 2 < newLocations.length) {
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
+        }
+        toast.success('Custom icons generated for all locations!')
+      }
     } catch (error) {
       console.error('Error generating locations:', error)
       toast.error('Failed to generate locations')
     } finally {
       setIsGeneratingLocations(false)
     }
+  }
+
+  const generateIconForLocation = async (location: MapLocation) => {
+    try {
+      const biome = biomes.find(b => b.value === mapSettings.biome)
+      const terrain = terrainTypes.find(t => t.value === mapSettings.terrainType)
+      const baseDescription = mapDescription.trim()
+      
+      // Create context-aware icon prompt
+      let iconPrompt = `Create a detailed icon for a ${location.type} called "${location.name}"`
+      
+      if (location.description) {
+        iconPrompt += ` - ${location.description}`
+      }
+      
+      iconPrompt += `. Style should be ${terrain?.label.toLowerCase()} ${biome?.label.toLowerCase()}`
+      
+      if (baseDescription) {
+        iconPrompt += ` fitting the theme: ${baseDescription}`
+      }
+      
+      iconPrompt += `. The icon should be clear, recognizable at small sizes, and suitable for use on a game map. Use appropriate colors and symbols for a ${location.type}.`
+      
+      const { data } = await blink.ai.generateImage({
+        prompt: iconPrompt,
+        size: '1024x1024',
+        quality: 'high',
+        n: 1
+      })
+
+      if (data && data[0]?.url) {
+        // Update the location with the generated icon
+        setLocations(prev => prev.map(loc => 
+          loc.id === location.id 
+            ? { ...loc, iconUrl: data[0].url }
+            : loc
+        ))
+        toast.success(`Icon generated for ${location.name}!`)
+        return data[0].url
+      }
+    } catch (error) {
+      console.error('Error generating icon:', error)
+      toast.error(`Failed to generate icon for ${location.name}`)
+    }
+    return null
   }
 
   const addLocation = () => {
@@ -1255,6 +1387,20 @@ export function MapMakerDashboard({ user }: MapMakerDashboardProps) {
                         </div>
                         
                         <div className="flex items-center gap-1 ml-2">
+                          {!location.iconUrl && (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                generateIconForLocation(location)
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              title="Generate custom icon"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                            </Button>
+                          )}
                           <Button
                             onClick={(e) => {
                               e.stopPropagation()
